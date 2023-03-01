@@ -1,0 +1,1 @@
+python -m PyInstaller -F trader_excel_view.py -p trading_excel.py --hidden-import xlrd --hidden-import xlwt -i tool2.png -n 表格工具
