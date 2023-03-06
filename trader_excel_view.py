@@ -13,53 +13,61 @@ from enum import Enum
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
+import tkinter.font as tkFont
 import tkinter.messagebox as msgbox
 
 import trading_excel
 
-def select_file(open: bool = False, action = None):
+
+def select_file(open: bool = False, action=None):
     filepath = filedialog.askopenfilename()
     if open is False:
         return filepath
     elif open and action is not None:
         return action(filepath)
 
+
 def select_folder():
     f = filedialog.askdirectory()
     return f
 
+
 def check_filefomat(file):
     file_s = file.split('.')
     if file_s[len(file_s) - 1] != 'xls' and \
-        file_s[len(file_s) - 1] != 'xlsx':
+            file_s[len(file_s) - 1] != 'xlsx':
         return False
     return True
+
 
 class TraderExcelMerge:
     def __init__(self):
         self.fileptah = None
         self.root = tk.Tk(sync=True)
+        ft = tkFont.Font(family='Fixdsys', size=10, weight=tkFont.BOLD)
         self.root.title("表格合并")
         self.root.geometry("300x150")
-        self.root.resizable(0,0)
-        #self.txtfile = tk.StringVar()
+        self.root.resizable(0, 0)
+        # self.txtfile = tk.StringVar()
         self.text = ttk.Entry(self.root, width=25)
-        self.text.place(x=10, y = 30)
-        
-        self.selectBn = ttk.Button(self.root, text="表格导入", width=10, command=self.select_click,)
+        self.text.place(x=10, y=30)
+
+        self.selectBn = ttk.Button(
+            self.root, text="表格导入", width=10, command=self.select_click,)
         self.selectBn.place(x=10 + 30 + 170, y=30)
 
-        self.textexp = ttk.Entry(self.root,width=25)
-        self.textexp.place(x=10, y = 30 +10 + 30)
+        self.textexp = ttk.Entry(self.root, width=25)
+        self.textexp.place(x=10, y=30 + 10 + 30)
 
-        self.sexpBn = ttk.Button(self.root, text="表格合并", width=10, command=self.export_file)
+        self.sexpBn = ttk.Button(
+            self.root, text="表格合并", width=10, command=self.export_file)
         self.sexpBn.place(x=10 + 30 + 170, y=30 + 10 + 30)
         self.root.mainloop()
 
     def select_click(self):
         self.fileptah = select_file()
-        self.text.delete(0,tk.END)
-        self.textexp.delete(0,tk.END)
+        self.text.delete(0, tk.END)
+        self.textexp.delete(0, tk.END)
         if self.fileptah is not None:
             filename = self.fileptah.split('/')
             self.resfilename = filename[len(filename)-1]
@@ -68,7 +76,7 @@ class TraderExcelMerge:
                 return
             fn = self.resfilename.split('.')
             self.resfilename = fn[0] + '_汇总表.' + fn[len(fn) - 1]
-            self.text.insert(0,filename[len(filename)-1])
+            self.text.insert(0, filename[len(filename)-1])
             self.textexp.insert(0, self.resfilename)
         self.root.focus()
 
@@ -76,8 +84,9 @@ class TraderExcelMerge:
         path = select_folder()
         self.resfilename = self.textexp.get()
         self.expfile = path + '/' + self.resfilename
-        trading_excel.merge_excel(self.fileptah ,self.expfile)
+        trading_excel.merge_excel(self.fileptah, path)
         print(self.expfile)
+
 
 class ExcelToolWnd:
     class ExcelMode(Enum):
@@ -98,14 +107,18 @@ class ExcelToolWnd:
         self.rootWnd.geometry("300x150")
         self.rootWnd.resizable(0, 0)
 
-        self.cbMode = ttk.Combobox(self.rootWnd, justify=tk.RIGHT, values=('交易表合并', '暂无'))
+        self.cbMode = ttk.Combobox(
+            self.rootWnd, justify=tk.RIGHT, values=('交易表合并', '暂无'))
 
-        self.activeBn = ttk.Button(self.rootWnd, text='确定', command=self.button_click)
+        self.activeBn = ttk.Button(
+            self.rootWnd, text='确定', command=self.button_click)
 
         self.cbMode.pack(side=tk.LEFT, padx=20)
         self.activeBn.pack(side=tk.LEFT, padx=10)
 
         self.rootWnd.mainloop()
 
+
 if __name__ == "__main__":
-    exe = ExcelToolWnd()
+    # exe = ExcelToolWnd()
+    tem = TraderExcelMerge()
