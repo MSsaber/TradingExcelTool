@@ -70,9 +70,10 @@ class TableData:
                         v = s
                 self.datas[i][c] = t(v)
 
-    def get_col_by_tital(self, tital):
+    def get_col_by_tital(self, titals):
+        tital = titals.split(';')
         for i in range(len(self.header)):
-            if self.header[i] == tital:
+            if self.header[i] in tital:
                 return i
         return -1
 
@@ -130,9 +131,10 @@ class TableData:
             res.append(table)
         return res
 
-    def split_table_by_tital(self, tital):
+    def split_table_by_tital(self, titals):
+        tital = titals.split(';')
         for i in range(len(self.header)):
-            if self.header[i] == tital:
+            if self.header[i] in tital:
                 return self.split_table_by_col(i)
         return None
 
@@ -201,7 +203,7 @@ class TableData:
         dictcol = self.get_col_by_tital('方向')
         amountcol = self.get_col_by_tital('成交金额')
         numcol = self.get_col_by_tital('成交数量')
-        id = self.datas[0][self.get_col_by_tital('策略Id')]
+        id = self.datas[0][self.get_col_by_tital('策略Id;策略ID;策略id')]
 
         self.direct = self.datas[0][dictcol]
         total = 0
@@ -614,9 +616,11 @@ def parse_excel(excel, filter=['成交', '委托', '持仓', '资金']):
             continue
         else:
             tables[sn] = excel.sheet_by_name(sn)
+    print(tables)
     for k, v in tables.items():
         table = TradingTable.gen_tradingtable(k, v)
-        tabledatas = table.split_table_by_tital('策略Id')
+        tabledatas = table.split_table_by_tital('策略Id;策略ID;策略id')
+        print(tabledatas)
         for t in tabledatas:
             pricecol = t.get_col_by_tital('成交价格')
             amountcol = t.get_col_by_tital('成交金额')
