@@ -9,6 +9,7 @@
 @Desc    :   解析表格
 '''
 
+import copy
 import datetime
 try:
     import xlrd
@@ -16,10 +17,324 @@ try:
 except Exception as e:
     print(e)
 
-deal_num_col = 5
-deal_price_col = 6
-deal_amount_col = 7
+deal_num_col = 6
+deal_price_col = 7
+deal_amount_col = 8
 
+_excel_style_dir = {}
+
+def init_default_excel_style():
+    global _excel_style_dir
+    #sum table style
+    sumtable_header_style = xlwt.XFStyle()  # Create the pattern
+    sumtable_header_font = xlwt.Font()
+    sumtable_header_font.name = u"微软黑雅"
+    sumtable_header_font.bold = True
+    sumtable_header_font.height = 20*18
+    sumtable_header_style.font = sumtable_header_font
+    sumtable_header_alignment = xlwt.Alignment()
+    sumtable_header_alignment.horz = 0x02
+    sumtable_header_alignment.vert = 0x01
+    sumtable_header_style.alignment = sumtable_header_alignment
+    _excel_style_dir['sumtable_tital'] = sumtable_header_style
+    
+    sumtable_date_style = xlwt.XFStyle()  # Create the pattern
+    sumtable_date_font = xlwt.Font()
+    sumtable_date_font.name = u"等线"
+    sumtable_date_font.bold = True
+    sumtable_date_font.height = 20*14
+    sumtable_date_style.font = sumtable_date_font
+    sumtable_date_alignment = xlwt.Alignment()
+    sumtable_date_alignment.horz = 0x02
+    sumtable_date_alignment.vert = 0x01
+    sumtable_date_style.alignment = sumtable_date_alignment
+    _excel_style_dir['sumtable_date'] = sumtable_date_style
+
+    sumtable_style = xlwt.XFStyle()  # Create the pattern
+    sumtable_pattern = xlwt.Pattern()  # Create the pattern
+    # May be: NO_PATTERN, SOLID_PATTERN, or 0x00 through 0x12
+    sumtable_pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+    sumtable_pattern.pattern_fore_colour = 0x25
+    sumtable_font = xlwt.Font()
+    sumtable_font.name = u"宋体"
+    sumtable_font.bold = True
+    sumtable_font.height = 20*12
+    sumtable_style.font = sumtable_font
+    sumtable_alignment = xlwt.Alignment()
+    sumtable_alignment.horz = 0x03
+    sumtable_alignment.vert = 0x01
+    sumtable_style.alignment = sumtable_alignment
+    sumtable_style.pattern = sumtable_pattern  # Add pattern to style
+    _excel_style_dir['sumtable_zero'] = sumtable_style
+
+    sumtable_theader_style = xlwt.XFStyle()  # Create the pattern
+    sumtable_theader_font = xlwt.Font()
+    sumtable_theader_font.name = u"宋体"
+    sumtable_theader_font.bold = True
+    sumtable_theader_font.height = 20*12
+    sumtable_theader_style.font = sumtable_theader_font
+    sumtable_theader_borders = xlwt.Borders()
+    sumtable_theader_borders.left = xlwt.Borders.THIN
+    sumtable_theader_borders.right = xlwt.Borders.THIN
+    sumtable_theader_borders.top = xlwt.Borders.THIN
+    sumtable_theader_borders.bottom = xlwt.Borders.THIN
+    sumtable_theader_borders.left_colour = 0xff
+    sumtable_theader_borders.right_colour = 0xff
+    sumtable_theader_borders.top_colour = 0xff
+    sumtable_theader_borders.bottom_colour = 0xff
+    sumtable_theader_style.borders = sumtable_theader_borders
+    sumtable_theader_alignment = xlwt.Alignment()
+    # 0x01(左端对齐)、0x02(水平方向上居中对齐)、0x03(右端对齐)
+    sumtable_theader_alignment.horz = 0x02
+    # 0x00(上端对齐)、 0x01(垂直方向上居中对齐)、0x02(底端对齐)
+    sumtable_theader_alignment.vert = 0x01
+    sumtable_theader_style.alignment = sumtable_theader_alignment
+    _excel_style_dir['sumtable_header'] = sumtable_theader_style
+
+    sumtable_cell_style = xlwt.XFStyle()
+    sumtable_cell_borders = xlwt.Borders()
+    sumtable_cell_borders.left = xlwt.Borders.THIN
+    sumtable_cell_borders.right = xlwt.Borders.THIN
+    sumtable_cell_borders.top = xlwt.Borders.THIN
+    sumtable_cell_borders.bottom = xlwt.Borders.THIN
+    sumtable_cell_borders.left_colour = 0xff
+    sumtable_cell_borders.right_colour = 0xff
+    sumtable_cell_borders.top_colour = 0xff
+    sumtable_cell_borders.bottom_colour = 0xff
+    sumtable_cell_style.borders = sumtable_cell_borders
+    sumtable_cell_font = xlwt.Font()
+    sumtable_cell_font.name = u"宋体"
+    sumtable_cell_font.height = 20*12
+    sumtable_cell_style.font = sumtable_cell_font
+    sumtable_cell_alignment = xlwt.Alignment()
+    sumtable_cell_alignment.horz = 0x03
+    sumtable_cell_alignment.vert = 0x01
+    sumtable_cell_style.alignment = sumtable_cell_alignment
+    _excel_style_dir['sumtable_cell'] = sumtable_cell_style
+
+    sumtable_cell_buy_style = xlwt.XFStyle()
+    sumtable_cell_buy_borders = xlwt.Borders()
+    sumtable_cell_buy_borders.left = xlwt.Borders.THIN
+    sumtable_cell_buy_borders.right = xlwt.Borders.THIN
+    sumtable_cell_buy_borders.top = xlwt.Borders.THIN
+    sumtable_cell_buy_borders.bottom = xlwt.Borders.THIN
+    sumtable_cell_buy_borders.left_colour = 0xff
+    sumtable_cell_buy_borders.right_colour = 0xff
+    sumtable_cell_buy_borders.top_colour = 0xff
+    sumtable_cell_buy_borders.bottom_colour = 0xff
+    sumtable_cell_buy_style.borders = sumtable_cell_buy_borders
+    sumtable_cell_buy_font = xlwt.Font()
+    sumtable_cell_buy_font.name = u"宋体"
+    sumtable_cell_buy_font.height = 20*12
+    sumtable_cell_buy_font.colour_index = 0x27
+    sumtable_cell_buy_style.font = sumtable_cell_buy_font
+    sumtable_cell_buy_alignment = xlwt.Alignment()
+    sumtable_cell_buy_alignment.horz = 0x03
+    sumtable_cell_buy_alignment.vert = 0x01
+    sumtable_cell_buy_style.alignment = sumtable_cell_buy_alignment
+    _excel_style_dir['sumtable_cell_buy'] = sumtable_cell_buy_style
+
+    sumtable_cell_sell_style = xlwt.XFStyle()
+    sumtable_cell_sell_borders = xlwt.Borders()
+    sumtable_cell_sell_borders.left = xlwt.Borders.THIN
+    sumtable_cell_sell_borders.right = xlwt.Borders.THIN
+    sumtable_cell_sell_borders.top = xlwt.Borders.THIN
+    sumtable_cell_sell_borders.bottom = xlwt.Borders.THIN
+    sumtable_cell_sell_borders.left_colour = 0xff
+    sumtable_cell_sell_borders.right_colour = 0xff
+    sumtable_cell_sell_borders.top_colour = 0xff
+    sumtable_cell_sell_borders.bottom_colour = 0xff
+    sumtable_cell_sell_style.borders = sumtable_cell_sell_borders
+    sumtable_cell_sell_font = xlwt.Font()
+    sumtable_cell_sell_font.name = u"宋体"
+    sumtable_cell_sell_font.height = 20*12
+    sumtable_cell_sell_font.colour_index = 0x26
+    sumtable_cell_sell_style.font = sumtable_cell_sell_font
+    sumtable_cell_sell_alignment = xlwt.Alignment()
+    sumtable_cell_sell_alignment.horz = 0x03
+    sumtable_cell_sell_alignment.vert = 0x01
+    sumtable_cell_sell_style.alignment = sumtable_cell_sell_alignment
+    _excel_style_dir['sumtable_cell_sell'] = sumtable_cell_sell_style
+
+    sumtable_total_style = xlwt.XFStyle()
+    sumtable_total_pattern = xlwt.Pattern()  # Create the pattern
+    sumtable_total_pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+    sumtable_total_pattern.pattern_fore_colour = 0x28
+    sumtable_total_style.pattern = sumtable_total_pattern
+    sumtable_total_borders = xlwt.Borders()
+    sumtable_total_borders.left = xlwt.Borders.THIN
+    sumtable_total_borders.right = xlwt.Borders.THIN
+    sumtable_total_borders.top = xlwt.Borders.THIN
+    sumtable_total_borders.bottom = xlwt.Borders.THIN
+    sumtable_total_borders.left_colour = 0xff
+    sumtable_total_borders.right_colour = 0xff
+    sumtable_total_borders.top_colour = 0xff
+    sumtable_total_borders.bottom_colour = 0xff
+    sumtable_total_style.borders = sumtable_total_borders
+    sumtable_total_font = xlwt.Font()
+    sumtable_total_font.name = u"宋体"
+    sumtable_total_font.height = 20*12
+    sumtable_total_style.font = sumtable_total_font
+    sumtable_total_alignment = xlwt.Alignment()
+    sumtable_total_alignment.horz = 0x03
+    sumtable_total_alignment.vert = 0x01
+    sumtable_total_style.alignment = sumtable_total_alignment
+    _excel_style_dir['sumtable_total'] = sumtable_total_style
+
+    #total table
+    totaltable_zero_buy_style = xlwt.XFStyle()  # Create the pattern
+    totaltable_zero_buy_pattern = xlwt.Pattern()  # Create the pattern
+    totaltable_zero_buy_pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+    totaltable_zero_buy_pattern.pattern_fore_colour = 0x21
+    totaltable_zero_buy_font = xlwt.Font()
+    totaltable_zero_buy_font.name = u"等线"
+    totaltable_zero_buy_font.bold = True
+    totaltable_zero_buy_font.height = 20*14
+    totaltable_zero_buy_style.font = totaltable_zero_buy_font
+    totaltable_zero_buy_alignment = xlwt.Alignment()
+    totaltable_zero_buy_alignment.horz = 0x03
+    totaltable_zero_buy_alignment.vert = 0x01
+    totaltable_zero_buy_style.alignment = totaltable_zero_buy_alignment
+    totaltable_zero_buy_style.pattern = totaltable_zero_buy_pattern  # Add pattern to style
+    _excel_style_dir['totaltable_zero_buy'] = totaltable_zero_buy_style
+
+    totaltable_zero_sell_style = xlwt.XFStyle()  # Create the pattern
+    totaltable_zero_sell_pattern = xlwt.Pattern()  # Create the pattern
+    totaltable_zero_sell_pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+    totaltable_zero_sell_pattern.pattern_fore_colour = 0x22
+    totaltable_zero_sell_font = xlwt.Font()
+    totaltable_zero_sell_font.name = u"等线"
+    totaltable_zero_sell_font.bold = True
+    totaltable_zero_sell_font.height = 20*14
+    totaltable_zero_sell_style.font = totaltable_zero_sell_font
+    totaltable_zero_sell_alignment = xlwt.Alignment()
+    totaltable_zero_sell_alignment.horz = 0x03
+    totaltable_zero_sell_alignment.vert = 0x01
+    totaltable_zero_sell_style.alignment = totaltable_zero_sell_alignment
+    totaltable_zero_sell_style.pattern = totaltable_zero_sell_pattern  # Add pattern to style
+    _excel_style_dir['totaltable_zero_sell'] = totaltable_zero_sell_style
+
+    totaltable_header_style = xlwt.XFStyle()  # Create the pattern
+    totaltable_header_font = xlwt.Font()
+    totaltable_header_font.name = u"等线"
+    totaltable_header_font.bold = True
+    totaltable_header_font.height = 20*12
+    totaltable_header_style.font = totaltable_header_font
+    totaltable_header_alignment = xlwt.Alignment()
+    # 0x01(左端对齐)、0x02(水平方向上居中对齐)、0x03(右端对齐)
+    totaltable_header_alignment.horz = 0x02
+    # 0x00(上端对齐)、 0x01(垂直方向上居中对齐)、0x02(底端对齐)
+    totaltable_header_alignment.vert = 0x01
+    totaltable_header_style.alignment = totaltable_header_alignment
+    _excel_style_dir['totaltable_header'] = totaltable_header_style
+
+    totaltable_data_style = xlwt.XFStyle()
+    totaltable_data_font = xlwt.Font()
+    totaltable_data_font.name = u"等线"
+    totaltable_data_font.height = 20*11
+    totaltable_data_style.font = totaltable_data_font
+    totaltable_data_alignment = xlwt.Alignment()
+    totaltable_data_alignment.horz = 0x02
+    totaltable_data_alignment.vert = 0x01
+    totaltable_data_style.alignment = totaltable_data_alignment
+    _excel_style_dir['totaltable_data'] = totaltable_data_style
+
+    #single strategy table
+    strategy_zero_buy_style = xlwt.XFStyle()  # Create the pattern
+    strategy_zero_buy_pattern = xlwt.Pattern()  # Create the pattern
+    strategy_zero_buy_pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+    strategy_zero_buy_pattern.pattern_fore_colour = 0x21
+    strategy_zero_buy_font = xlwt.Font()
+    strategy_zero_buy_font.name = u"等线"
+    strategy_zero_buy_font.bold = True
+    strategy_zero_buy_font.height = 20*14
+    strategy_zero_buy_style.font = strategy_zero_buy_font
+    strategy_zero_buy_alignment = xlwt.Alignment()
+    strategy_zero_buy_alignment.horz = 0x03
+    strategy_zero_buy_alignment.vert = 0x01
+    strategy_zero_buy_style.alignment = strategy_zero_buy_alignment
+    strategy_zero_buy_style.pattern = strategy_zero_buy_pattern
+    _excel_style_dir['strategy_zero_buy'] = strategy_zero_buy_style
+
+    strategy_zero_sell_style = xlwt.XFStyle()  # Create the pattern
+    strategy_zero_sell_pattern = xlwt.Pattern()  # Create the pattern
+    strategy_zero_sell_pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+    strategy_zero_sell_pattern.pattern_fore_colour = 0x22
+    strategy_zero_sell_font = xlwt.Font()
+    strategy_zero_sell_font.name = u"等线"
+    strategy_zero_sell_font.bold = True
+    strategy_zero_sell_font.height = 20*14
+    strategy_zero_sell_style.font = strategy_zero_sell_font
+    strategy_zero_sell_alignment = xlwt.Alignment()
+    strategy_zero_sell_alignment.horz = 0x03
+    strategy_zero_sell_alignment.vert = 0x01
+    strategy_zero_sell_style.alignment = strategy_zero_sell_alignment
+    strategy_zero_sell_style.pattern = strategy_zero_sell_pattern
+    _excel_style_dir['strategy_zero_sell'] = strategy_zero_sell_style
+
+    strategy_header_style = xlwt.XFStyle()  # Create the pattern
+    strategy_header_font = xlwt.Font()
+    strategy_header_font.name = u"等线"
+    strategy_header_font.bold = True
+    strategy_header_font.height = 20*12
+    strategy_header_style.font = strategy_header_font
+    strategy_header_alignment = xlwt.Alignment()
+    # 0x01(左端对齐)、0x02(水平方向上居中对齐)、0x03(右端对齐)
+    strategy_header_alignment.horz = 0x02
+    # 0x00(上端对齐)、 0x01(垂直方向上居中对齐)、0x02(底端对齐)
+    strategy_header_alignment.vert = 0x01
+    strategy_header_style.alignment = strategy_header_alignment
+    _excel_style_dir['strategy_header'] = strategy_header_style
+
+    strategy_data_style = xlwt.XFStyle()
+    strategy_data_font = xlwt.Font()
+    strategy_data_font.name = u"等线"
+    strategy_data_font.height = 20*11
+    strategy_data_style.font = strategy_data_font
+    strategy_data_alignment = xlwt.Alignment()
+    strategy_data_alignment.horz = 0x02
+    strategy_data_alignment.vert = 0x01
+    strategy_data_style.alignment = strategy_data_alignment
+    _excel_style_dir['strategy_data'] = strategy_data_style
+
+    strategy_data_buy_style = xlwt.XFStyle()
+    strategy_data_buy_font = xlwt.Font()
+    strategy_data_buy_font.name = u"等线"
+    strategy_data_buy_font.height = 20*11
+    strategy_data_buy_font.colour_index = 0x26
+    strategy_data_buy_style.font = strategy_data_buy_font
+    strategy_data_buy_alignment = xlwt.Alignment()
+    strategy_data_buy_alignment.horz = 0x02
+    strategy_data_buy_alignment.vert = 0x01
+    strategy_data_buy_style.alignment = strategy_data_buy_alignment
+    _excel_style_dir['strategy_data_buy'] = strategy_data_buy_style
+
+    strategy_data_sell_style = xlwt.XFStyle()
+    strategy_data_sell_font = xlwt.Font()
+    strategy_data_sell_font.name = u"等线"
+    strategy_data_sell_font.height = 20*11
+    strategy_data_sell_font.colour_index = 0x27
+    strategy_data_sell_style.font = strategy_data_sell_font
+    strategy_data_sell_alignment = xlwt.Alignment()
+    strategy_data_sell_alignment.horz = 0x02
+    strategy_data_sell_alignment.vert = 0x01
+    strategy_data_sell_style.alignment = strategy_data_sell_alignment
+    _excel_style_dir['strategy_data_sell'] = strategy_data_sell_style
+
+
+def add_excel_style(key, style, cover = True):
+    global _excel_style_dir
+    if key in _excel_style_dir.keys():
+        if cover is True:
+            _excel_style_dir[key] = style
+        else:
+            return
+    else:
+        _excel_style_dir[key] = style
+
+def get_excel_style(key):
+    global _excel_style_dir
+    return _excel_style_dir[key]
 
 class TableData:
     def __init__(self, name, header=None, datas=None):
@@ -287,7 +602,7 @@ def gen_summary(name, tables):
                "入库金额", "实现盈亏", "基准价",
                "档位价差", "买卖价差", "档位", "每档股数"
                ]
-    sum_table = TableData(name + "-汇总")
+    sum_table = TableData(name + "-全")
     total = 0
     total_amount = 0
     avg_price = 0
@@ -312,7 +627,42 @@ def gen_summary(name, tables):
     sum_table.set_datas(datas)
     sum_table.set_header(headers)
     sum_table.zerorow = ["合计", total, avg_price, total_amount, yl]
-    res = [sum_table] + tables
+    
+    total_header = ['序号','日期','时间','证券代码',
+                    '证券简称','方向','成交数量','成交价格',
+                    '成交金额','成交编号','委托编号',
+                    '股东号','策略ID','组合ID','组合名称']
+    #增加买入汇总
+    buy_table = TableData("买入汇总")
+    buy_table.zerorow.append(0)
+    buy_table.direct = '买入'
+    buy_datas = []
+    for table in tables:
+        if table.direct == '卖出':
+            continue
+        if table.zerorow[2] != 0:
+            buy_datas += copy.deepcopy(table.datas)
+            buy_table.zerorow[0] += table.zerorow[5]
+    for i in range(len(buy_datas)):
+        buy_datas[i][0] = i + 1
+    buy_table.set_datas(buy_datas)
+    buy_table.set_header(total_header)
+    #增加卖出汇总
+    sell_table = TableData("卖出汇总")
+    sell_table.zerorow.append(0)
+    sell_table.direct = '卖出'
+    sell_datas = []
+    for table in tables:
+        if table.direct == '买入':
+            continue
+        if table.zerorow[2] != 0:
+            sell_datas += copy.deepcopy(table.datas)
+            sell_table.zerorow[0] += table.zerorow[5]
+    for i in range(len(sell_datas)):
+        sell_datas[i][0] = i + 1
+    sell_table.set_datas(sell_datas)
+    sell_table.set_header(total_header)
+    res = [sum_table, buy_table, sell_table] + tables
     return res
 
 
@@ -323,66 +673,34 @@ def gen_sumtable(sheet, table):
     row = 0
     col_width_list = []
     # title
-    style = xlwt.XFStyle()  # Create the pattern
-    tfont = xlwt.Font()
-    tfont.name = u"微软黑雅"
-    tfont.bold = True
-    tfont.height = 20*18
-    style.font = tfont
-    talignment = xlwt.Alignment()
-    talignment.horz = 0x02
-    talignment.vert = 0x01
-    style.alignment = talignment
     tall_style = xlwt.easyxf('font: height ' + str(int(1.5 * 20 * 18)))
     sheet.row(row).set_style(tall_style)
-    sheet.write_merge(row, row, 0, 1, "")
-    sheet.write_merge(row, row, 2, len(table.header) -
-                      1, table.name + "策略汇总表", style)
+    #sheet.write_merge(row, row, 0, 1, "")
+    sheet.write_merge(row, row, 0, len(table.header) -
+                      1, table.name + "策略汇总表", get_excel_style('sumtable_tital'))
 
     row += 1
-    style = xlwt.XFStyle()  # Create the pattern
-    tfont = xlwt.Font()
-    tfont.name = u"等线"
-    tfont.bold = True
-    tfont.height = 20*14
-    style.font = tfont
-    talignment = xlwt.Alignment()
-    talignment.horz = 0x02
-    talignment.vert = 0x01
-    style.alignment = talignment
     tall_style = xlwt.easyxf('font: height ' + str(int(1.5 * 20 * 14)))
     sheet.row(row).set_style(tall_style)
-    sheet.write_merge(row, row, 0, 1, "")
+    #sheet.write_merge(row, row, 0, 1, "")
     timestr = datetime.datetime.now().strftime(
         "%Y年1~") + str(int(datetime.datetime.now().strftime("%m"))) + "月"
-    sheet.write_merge(row, row, 2, len(table.header) - 1, timestr, style)
+    sheet.write_merge(row, row, 0, len(table.header) - 1, timestr, get_excel_style('sumtable_date'))
 
     row += 1
     tall_style = xlwt.easyxf('font: height ' + str(int(2 * 20 * 12)))
     sheet.row(row).set_style(tall_style)
     for col in range(len(table.zerorow)):
-        style = xlwt.XFStyle()  # Create the pattern
-        pattern = xlwt.Pattern()  # Create the pattern
-        # May be: NO_PATTERN, SOLID_PATTERN, or 0x00 through 0x12
-        pattern.pattern = xlwt.Pattern.SOLID_PATTERN
-        pattern.pattern_fore_colour = 0x25
-        font = xlwt.Font()
-        font.name = u"宋体"
-        font.bold = True
-        font.height = 20*12
-        style.font = font
-
-        alignment = xlwt.Alignment()
-        alignment.horz = 0x03
-        alignment.vert = 0x01
-        style.alignment = alignment
+        style = get_excel_style('sumtable_zero')
         if col == 1:
             style.num_format_str = '#,##0'
         elif col == 2:
             style.num_format_str = '#,##0.000'
         elif col == 3 or col == 4:
             style.num_format_str = '#,##0.00'
-        style.pattern = pattern  # Add pattern to style
+        else:
+            style.num_format_str = 'General'
+            
         if col == 0:
             sheet.write(row, 0, '', style)
             sheet.write(row, 1, '', style)
@@ -407,30 +725,7 @@ def gen_sumtable(sheet, table):
     tall_style = xlwt.easyxf('font: height ' + str(int(1.5 * 20 * 12)))
     sheet.row(row).set_style(tall_style)
     for col in range(len(table.header)):
-        style = xlwt.XFStyle()  # Create the pattern
-        font = xlwt.Font()
-        font.name = u"宋体"
-        font.bold = True
-        font.height = 20*12
-        style.font = font
-
-        borders = xlwt.Borders()
-        borders.left = xlwt.Borders.THIN
-        borders.right = xlwt.Borders.THIN
-        borders.top = xlwt.Borders.THIN
-        borders.bottom = xlwt.Borders.THIN
-        borders.left_colour = 0xff
-        borders.right_colour = 0xff
-        borders.top_colour = 0xff
-        borders.bottom_colour = 0xff
-        style.borders = borders
-
-        alignment = xlwt.Alignment()
-        # 0x01(左端对齐)、0x02(水平方向上居中对齐)、0x03(右端对齐)
-        alignment.horz = 0x02
-        # 0x00(上端对齐)、 0x01(垂直方向上居中对齐)、0x02(底端对齐)
-        alignment.vert = 0x01
-        style.alignment = alignment
+        style = get_excel_style('sumtable_header')
         sheet.write(row, col, table.header[col], style)
         # 计算字宽，如果没有文字，则不计算
         col_wifth = (len(str(table.header[col])) + 10) * 20 * 12
@@ -440,32 +735,15 @@ def gen_sumtable(sheet, table):
     row += 1
     for r in table.datas:
         for col in range(len(r)):
-            style = xlwt.XFStyle()
-
-            borders = xlwt.Borders()
-            borders.left = xlwt.Borders.THIN
-            borders.right = xlwt.Borders.THIN
-            borders.top = xlwt.Borders.THIN
-            borders.bottom = xlwt.Borders.THIN
-            borders.left_colour = 0xff
-            borders.right_colour = 0xff
-            borders.top_colour = 0xff
-            borders.bottom_colour = 0xff
-            style.borders = borders
-
-            font = xlwt.Font()
-            font.name = u"宋体"
-            font.height = 20*12
+            style = get_excel_style('sumtable_cell')
             if r[col] == "买入":
-                font.colour_index = 0x26
+                style = get_excel_style('sumtable_cell_sell')
             elif r[col] == "卖出":
-                font.colour_index = 0x27
-            style.font = font
-
-            alignment = xlwt.Alignment()
-            alignment.horz = 0x03
-            alignment.vert = 0x01
-            style.alignment = alignment
+                style = get_excel_style('sumtable_cell_buy')
+            else:
+                style.font.colour_index = 0x08
+            if col == 0 or col == 3:
+                style.alignment.horz = 0x02
             if isinstance(r[col], float):
                 if col == 5:
                     if r[4] != 0:
@@ -487,11 +765,101 @@ def gen_sumtable(sheet, table):
         tall_style = xlwt.easyxf('font: height ' + str(int(1.5 * 20 * 12)))
         sheet.row(row).set_style(tall_style)
         row += 1
+
+    #填充公式
+    for col in range(len(table.header)):
+        style = get_excel_style('sumtable_total')
+        if col == 4:
+            style.num_format_str = '#,##0'
+        elif col == 5:
+            style.num_format_str = '#,##0.000'
+        elif col == 7 or col == 6:
+            style.num_format_str = '#,##0.00'
+        else:
+            style.num_format_str = 'General'
+        if col == 5:
+            sheet.write(row,col,xlwt.Formula('ABS(G' + str(row + 1) + ')/ABS(E' + str(row + 1) + ')'), style)
+        elif col == 6:
+            sheet.write(row,col,xlwt.Formula('SUM(G5:'+'G' + str(row) + ')'), style)
+        elif col == 7:
+            sheet.write(row,col,xlwt.Formula('SUM(H5:'+'H' + str(row) + ')'), style)
+        elif col == 4:
+            sheet.write(row,col,xlwt.Formula('SUM(E5:'+'E' + str(row) + ')'), style)
+        elif col == 3:
+            sheet.write(row,col,'求和', style)
+        else:
+            sheet.write(row,col,'', style)
+    tall_style = xlwt.easyxf('font: height ' + str(int(1.5 * 20 * 12)))
+    sheet.row(row).set_style(tall_style)
+
     # 设置列宽
     for col in range(len(col_width_list)):
         colfnt = sheet.col(col)
         colfnt.width = col_width_list[col]
 
+def gen_totaltable(sheet, table):
+    row = 0
+    col_width_list = []
+    for col in range(len(table.header)):
+        style_name = 'totaltable_zero_'
+        flag = 'sell' if table.direct != '买入' else 'buy'
+        style = get_excel_style(style_name + flag)
+
+        if col == 6:
+            style.num_format_str = '#,##0'
+        elif col == 7:
+            style.num_format_str = '#,##0.000'
+        elif col == 8 or col == 9:
+            style.num_format_str = '#,##0.00'
+        else:
+            style.num_format_str = 'General'
+        if col <= 3 or col > 8:
+            sheet.write(row, col, '', style)
+            col_width_list.append(0)
+        elif col == 4:
+            sheet.write(row, col, "合计", style)
+        elif col == 5:
+            sheet.write(row, col, table.direct, style)
+        elif col == 6:
+            sheet.write(row,col,xlwt.Formula('SUM(G3:'+'G' + str(len(table.datas) + 2) + ')'), style)
+        elif col == 7:
+            sheet.write(row,col,xlwt.Formula('ABS(I1)/ABS(G1)'), style)
+        elif col == 8:
+            sheet.write(row,col,xlwt.Formula('SUM(I3:'+'I' + str(len(table.datas) + 2) + ')'), style)
+        #elif col == 9:
+        #    sheet.write(row,col,table.zerorow[0], style)
+    row += 1
+    for col in range(len(table.header)):
+        style = get_excel_style('totaltable_header')
+        sheet.write(row, col, table.header[col], style)
+        # 计算字宽，如果没有文字，则不计算
+        col_wifth = (len(str(table.header[col])) + 12) * 20 * 14
+        col_width_list.append(col_wifth)
+    row += 1
+
+    for r in table.datas:
+        for col in range(len(r)):
+            style = get_excel_style('totaltable_data')
+            if isinstance(r[col], float):
+                style.alignment.horz = 0x03
+                if col == deal_price_col:
+                    style.num_format_str = '#,##0.000'
+                elif col == deal_num_col:
+                    style.num_format_str = '#,##0'
+                else:
+                    style.num_format_str = '#,##0.00'
+                sheet.write(row, col, r[col], style)
+            else:
+                sheet.write(row, col, r[col], style)
+            # 计算字宽，如果没有文字，则不计算
+            col_wifth = (len(str(r[col])) + 12) * 20 * 12
+            if col_wifth > col_width_list[col]:
+                col_width_list[col] = col_wifth
+        row += 1
+    # 设置列宽
+    for col in range(len(col_width_list)):
+        colfnt = sheet.col(col)
+        colfnt.width = col_width_list[col]
 
 def gen_strategytable(sheet, table):
     # header
@@ -499,26 +867,11 @@ def gen_strategytable(sheet, table):
     col_width_list = []
 
     for col in range(len(table.zerorow)):
-        style = xlwt.XFStyle()  # Create the pattern
-        pattern = xlwt.Pattern()  # Create the pattern
-        # May be: NO_PATTERN, SOLID_PATTERN, or 0x00 through 0x12
-        pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+        style_name = 'strategy_zero_'
         directFlagCount = 1
-        # May be: 8 through 63. 0 = Black, 1 = White, 2 = Red, 3 = Green, 4 = Blue, 5 = Yellow, 6 = Magenta, 7 = Cyan, 16 = Maroon,
-        # 17 = Dark Green, 18 = Dark Blue, 19 = Dark Yellow , almost brown), 20 = Dark Magenta, 21 = Teal, 22 = Light Gray, 23 = Dark Gray, the list goes on...
-        pattern.pattern_fore_colour = 0x22 if table.zerorow[directFlagCount] != '买入' else 0x21
+        flag = 'sell' if table.zerorow[directFlagCount] != '买入' else 'buy'
+        style = get_excel_style(style_name + flag)
 
-        font = xlwt.Font()
-        font.name = u"等线"
-        font.colour_index = 0x23 if table.zerorow[directFlagCount] != '买入' else 0x24
-        font.bold = True
-        font.height = 20*14
-        style.font = font
-
-        alignment = xlwt.Alignment()
-        alignment.horz = 0x03
-        alignment.vert = 0x01
-        style.alignment = alignment
         if col == 2:
             style.num_format_str = '#,##0'
         elif col == 3:
@@ -530,7 +883,8 @@ def gen_strategytable(sheet, table):
             style.num_format_str = '#,##0.000'
         elif col == 4 or col == 5:
             style.num_format_str = '#,##0.00'
-        style.pattern = pattern  # Add pattern to style
+        else:
+            style.num_format_str = 'General'
         if col == 0:
             sheet.write(row, 0, '', style)
             sheet.write(row, 1, '', style)
@@ -555,19 +909,7 @@ def gen_strategytable(sheet, table):
                 col_width_list.append(0)
     row += 1
     for col in range(len(table.header)):
-        style = xlwt.XFStyle()  # Create the pattern
-        font = xlwt.Font()
-        font.name = u"等线"
-        font.bold = True
-        font.height = 20*12
-        style.font = font
-
-        alignment = xlwt.Alignment()
-        # 0x01(左端对齐)、0x02(水平方向上居中对齐)、0x03(右端对齐)
-        alignment.horz = 0x02
-        # 0x00(上端对齐)、 0x01(垂直方向上居中对齐)、0x02(底端对齐)
-        alignment.vert = 0x01
-        style.alignment = alignment
+        style = get_excel_style('strategy_header')
         sheet.write(row, col, table.header[col], style)
         # 计算字宽，如果没有文字，则不计算
         col_wifth = (len(str(table.header[col])) + 4) * 20 * 14
@@ -577,13 +919,9 @@ def gen_strategytable(sheet, table):
 
     for r in table.datas:
         for col in range(len(r)):
-            style = xlwt.XFStyle()
-            font = xlwt.Font()
-            font.name = u"等线"
-            font.height = 20*11
-            style.font = font
-
+            style = get_excel_style('strategy_data')
             if isinstance(r[col], float):
+                style.alignment.horz = 0x03
                 if col == deal_price_col:
                     style.num_format_str = '#,##0.000'
                 elif col == deal_num_col:
@@ -592,10 +930,6 @@ def gen_strategytable(sheet, table):
                     style.num_format_str = '#,##0.00'
                 sheet.write(row, col, r[col], style)
             else:
-                alignment = xlwt.Alignment()
-                alignment.horz = 0x03
-                alignment.vert = 0x01
-                style.alignment = alignment
                 sheet.write(row, col, r[col], style)
             # 计算字宽，如果没有文字，则不计算
             col_wifth = (len(str(r[col])) + 4) * 20 * 11
@@ -645,6 +979,7 @@ def gen_total_excel(tabledatas, outfile):
         xlwt.add_palette_colour('total background color', 0x25)
         xlwt.add_palette_colour('total buy text color', 0x26)
         xlwt.add_palette_colour('total sell text color', 0x27)
+        xlwt.add_palette_colour('sum data color', 0x28)
         workbook.set_colour_RGB(0x21, 255, 0, 0)
         workbook.set_colour_RGB(0x22, 0, 176, 80)
         workbook.set_colour_RGB(0x23, 0, 32, 96)
@@ -652,11 +987,14 @@ def gen_total_excel(tabledatas, outfile):
         workbook.set_colour_RGB(0x25, 155, 194, 230)
         workbook.set_colour_RGB(0x26, 255, 0, 0)
         workbook.set_colour_RGB(0x27, 0, 176, 80)
+        workbook.set_colour_RGB(0x28, 255, 255, 0)
 
         for table in tables:
             sheet = workbook.add_sheet(table.name, cell_overwrite_ok=True)
-            if "-汇总" in table.name:
+            if "-全" in table.name:
                 gen_sumtable(sheet, table)
+            elif '买入汇总' in table.name or '卖出汇总' in table.name:
+                gen_totaltable(sheet, table)
             else:
                 gen_strategytable(sheet, table)
 

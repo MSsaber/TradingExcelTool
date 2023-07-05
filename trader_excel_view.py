@@ -121,4 +121,5 @@ class ExcelToolWnd:
 
 if __name__ == "__main__":
     # exe = ExcelToolWnd()
+    trading_excel.init_default_excel_style()
     tem = TraderExcelMerge()
