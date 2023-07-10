@@ -742,8 +742,17 @@ def gen_sumtable(sheet, table):
                 style = get_excel_style('sumtable_cell_buy')
             else:
                 style.font.colour_index = 0x08
-            if col == 0 or col == 3:
-                style.alignment.horz = 0x02
+            if col == 3 or col == 0:
+                sumtable_cell_alignment = xlwt.Alignment()
+                sumtable_cell_alignment.horz = 0x02
+                sumtable_cell_alignment.vert = 0x01
+                style.alignment = sumtable_cell_alignment
+            else:
+                sumtable_cell_alignment = xlwt.Alignment()
+                sumtable_cell_alignment.horz = 0x03
+                sumtable_cell_alignment.vert = 0x01
+                style.alignment = sumtable_cell_alignment
+                #style.alignment.horz = 0x03
             if isinstance(r[col], float):
                 if col == 5:
                     if r[4] != 0:
@@ -757,6 +766,7 @@ def gen_sumtable(sheet, table):
                     style.num_format_str = '#,##0.00'
                 sheet.write(row, col, r[col], style)
             else:
+                style.num_format_str = 'General'
                 sheet.write(row, col, r[col], style)
             # 计算字宽，如果没有文字，则不计算
             col_wifth = (len(str(r[col])) + 6) * 20 * 12
@@ -841,7 +851,11 @@ def gen_totaltable(sheet, table):
         for col in range(len(r)):
             style = get_excel_style('totaltable_data')
             if isinstance(r[col], float):
-                style.alignment.horz = 0x03
+                totaltable_cell_alignment = xlwt.Alignment()
+                totaltable_cell_alignment.horz = 0x03
+                totaltable_cell_alignment.vert = 0x01
+                style.alignment = totaltable_cell_alignment
+                #style.alignment.horz = 0x03
                 if col == deal_price_col:
                     style.num_format_str = '#,##0.000'
                 elif col == deal_num_col:
@@ -850,6 +864,11 @@ def gen_totaltable(sheet, table):
                     style.num_format_str = '#,##0.00'
                 sheet.write(row, col, r[col], style)
             else:
+                totaltable_cell_alignment = xlwt.Alignment()
+                totaltable_cell_alignment.horz = 0x02
+                totaltable_cell_alignment.vert = 0x01
+                style.alignment = totaltable_cell_alignment
+                style.num_format_str = 'General'
                 sheet.write(row, col, r[col], style)
             # 计算字宽，如果没有文字，则不计算
             col_wifth = (len(str(r[col])) + 12) * 20 * 12
@@ -921,7 +940,11 @@ def gen_strategytable(sheet, table):
         for col in range(len(r)):
             style = get_excel_style('strategy_data')
             if isinstance(r[col], float):
-                style.alignment.horz = 0x03
+                strategytable_cell_alignment = xlwt.Alignment()
+                strategytable_cell_alignment.horz = 0x03
+                strategytable_cell_alignment.vert = 0x01
+                style.alignment = strategytable_cell_alignment
+                #style.alignment.horz = 0x03
                 if col == deal_price_col:
                     style.num_format_str = '#,##0.000'
                 elif col == deal_num_col:
@@ -930,6 +953,11 @@ def gen_strategytable(sheet, table):
                     style.num_format_str = '#,##0.00'
                 sheet.write(row, col, r[col], style)
             else:
+                strategytable_cell_alignment = xlwt.Alignment()
+                strategytable_cell_alignment.horz = 0x02
+                strategytable_cell_alignment.vert = 0x01
+                style.alignment = strategytable_cell_alignment
+                style.num_format_str = 'General'
                 sheet.write(row, col, r[col], style)
             # 计算字宽，如果没有文字，则不计算
             col_wifth = (len(str(r[col])) + 4) * 20 * 11
